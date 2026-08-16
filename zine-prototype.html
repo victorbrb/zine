@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Zine Prototype</title>
+<style>
+  @import url('https://fonts.googleapis.com/css?family=Cormorant+Garamond:400,600&display=swap');
+
+  :root {
+    --page-bg: #F5F5F5;
+    --dark-text: #2A2935;
+    --baseline: 12px;
+    --title-font: 'Cormorant Garamond', serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #dfdfdf;
+    font-family: var(--title-font);
+    gap: 20px;
+    padding: 20px;
+  }
+
+  .cover {
+    aspect-ratio: 2 / 1.3;
+    width: min(95vw, calc(90vh * (2 / 1.3)));
+    height: auto;
+    max-height: 90vh;
+    box-shadow: 0 0 60px rgba(0,0,0,.25);
+    transition: width 0.4s ease, aspect-ratio 0.4s ease;
+    position: relative;
+  }
+
+  .cover.single {
+    aspect-ratio: 1 / 1.3;
+    width: min(47.5vw, calc(90vh * (1 / 1.3)));
+  }
+
+  .single-page {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    background: var(--page-bg);
+  }
+
+  .book {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    position: relative;
+    perspective: 1600px;
+  }
+
+  /* static base pages: always present underneath everything */
+  .base-page {
+    width: 50%;
+    height: 100%;
+    background: var(--page-bg);
+    position: relative;
+    z-index: 0;
+  }
+  .base-page.right { position: absolute; right: 0; top: 0; }
+
+  /* each leaf is a full sheet: front (currently facing right) and
+     back (revealed once flipped) — both pre-rendered, nothing swaps at runtime */
+  .leaf {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 50%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transform-origin: 0% 0%;
+    transform: rotateY(0deg);
+    transition: transform 0.85s cubic-bezier(0.645, 0.045, 0.355, 1);
+  }
+
+  .leaf.flipped {
+    transform: rotateY(-180deg);
+  }
+
+  .face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    backface-visibility: hidden;
+    background: var(--page-bg);
+  }
+
+  .face.front {
+    transform: rotateY(0deg) translateZ(1px);
+    background-image: linear-gradient(90deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0) 12%);
+  }
+
+  .face.back {
+    transform: rotateY(180deg) translateZ(1px);
+    background-image: linear-gradient(-90deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0) 12%);
+  }
+
+  .media-placeholder {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      45deg,
+      #e8e8e3,
+      #e8e8e3 10px,
+      #deded8 10px,
+      #deded8 20px
+    );
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #7a7a72;
+    text-align: center;
+  }
+
+  .media-placeholder .media-icon {
+    font-size: 26px;
+    line-height: 1;
+  }
+
+  .media-placeholder .media-type {
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .media-placeholder .media-badge {
+    font-size: 11px;
+    color: #9a9a90;
+    letter-spacing: 0.3px;
+  }
+
+  .media-placeholder .media-label {
+    font-size: 12px;
+    color: #999;
+    margin-top: 2px;
+  }
+
+  .page-number {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    font-size: 12px;
+    color: #8a8a82;
+    background: rgba(255,255,255,0.6);
+    padding: 2px 8px;
+    border-radius: 3px;
+  }
+  .face.back .page-number { left: 10px; right: auto; }
+  .base-page.left .page-number { left: 10px; right: auto; }
+
+  .base-page .page-inner {
+    height: 100%;
+  }
+
+  .controls { display: flex; align-items: center; gap: 16px; }
+
+  button {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-family: var(--title-font);
+    cursor: pointer;
+    border: 1px solid #999;
+    background: white;
+    border-radius: 4px;
+  }
+  button:hover:not(:disabled) { background: #f0f0f0; }
+  button:disabled { opacity: 0.4; cursor: default; }
+
+  .spread-counter { font-size: 14px; color: #555; }
+</style>
+</head>
+<body>
+
+<div class="cover" id="coverEl">
+  <div class="single-page" id="singlePage"></div>
+  <div class="book" id="book"></div>
+</div>
+
+<div class="controls">
+  <button id="prevBtn">&larr; Previous</button>
+  <span class="spread-counter" id="counter"></span>
+  <button id="nextBtn">Next &rarr;</button>
+</div>
+
+<script>
+  // Each entry = one physical page face. `media` is 'image' or 'video' —
+  // swap the placeholder for a real <img>/<video src="..."> later.
+  const pages = [
+    { label: "Cover", media: "image" },
+    { label: "Contents", media: "image" },
+    { label: "Intro", media: "image" },
+    { label: "Feature Article", media: "video" },
+    { label: "Interview", media: "image" },
+    { label: "Gallery", media: "video" },
+    { label: "Notes", media: "image" },
+    { label: "Reviews", media: "image" },
+    { label: "Contributors", media: "image" },
+    { label: "Back Cover", media: "image" }
+  ];
+
+  const coverPage = pages[0];
+  const backCoverPage = pages[pages.length - 1];
+  const contentPages = pages.slice(1, pages.length - 1); // interior pages only
+
+  const totalSpreads = contentPages.length / 2;
+  const totalLeaves = totalSpreads - 1; // number of flippable sheets
+
+  const coverEl = document.getElementById('coverEl');
+  const singlePageEl = document.getElementById('singlePage');
+  const bookEl = document.getElementById('book');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const counterEl = document.getElementById('counter');
+
+  function mediaPlaceholderHTML(page, pageNum) {
+    const isVideo = page.media === 'video';
+    const icon = isVideo ? '&#9654;' : '&#128247;';
+    const type = isVideo ? 'MP4' : 'PNG';
+    const badge = isVideo ? 'autoplay · loop' : 'static image';
+    return `
+      <div class="media-placeholder">
+        <div class="media-icon">${icon}</div>
+        <div class="media-type">${type} placeholder</div>
+        <div class="media-badge">${badge}</div>
+        <div class="media-label">${page.label}</div>
+        <div class="page-number">${pageNum}</div>
+      </div>
+    `;
+  }
+
+  function pageContentHTML(page, pageNum) {
+    if (!page) return '';
+    return mediaPlaceholderHTML(page, pageNum);
+  }
+
+  // --- Build the DOM once: static base pages + all leaves, nothing re-renders on flip ---
+  const staticLeft = document.createElement('div');
+  staticLeft.className = 'base-page left';
+  staticLeft.innerHTML = `<div class="page-inner">${pageContentHTML(contentPages[0], 2)}</div>`;
+
+  const staticRight = document.createElement('div');
+  staticRight.className = 'base-page right';
+  staticRight.innerHTML = `<div class="page-inner">${pageContentHTML(contentPages[contentPages.length - 1], pages.length - 1)}</div>`;
+
+  bookEl.appendChild(staticLeft);
+  bookEl.appendChild(staticRight);
+
+  const leafEls = [];
+  for (let i = 0; i < totalLeaves; i++) {
+    const frontPage = contentPages[2 * i + 1];
+    const backPage = contentPages[2 * i + 2];
+    const frontNum = 2 * i + 3;
+    const backNum = 2 * i + 4;
+
+    const leaf = document.createElement('div');
+    leaf.className = 'leaf';
+    leaf.style.zIndex = totalLeaves - i; // leaf 0 starts on top of the right-hand stack
+    leaf.innerHTML = `
+      <div class="face front">${pageContentHTML(frontPage, frontNum)}</div>
+      <div class="face back">${pageContentHTML(backPage, backNum)}</div>
+    `;
+    bookEl.appendChild(leaf);
+    leafEls.push(leaf);
+  }
+
+  let k = 0; // number of leaves currently flipped = current spread index
+  let zCounter = totalLeaves + 1;
+  let animating = false;
+
+  function updateControls() {
+    counterEl.textContent = `Spread ${k + 1} of ${totalSpreads}`;
+    prevBtn.disabled = k === 0 || animating;
+    nextBtn.disabled = k === totalLeaves || animating;
+  }
+
+  // --- Sound: synthesized whoosh, no external file needed ---
+  let audioCtx = null;
+  function playSwipeSound() {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const duration = 0.3;
+      const bufferSize = audioCtx.sampleRate * duration;
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+      }
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = buffer;
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.Q.value = 0.8;
+      filter.frequency.setValueAtTime(1800, audioCtx.currentTime);
+      filter.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + duration);
+      const gainNode = audioCtx.createGain();
+      gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      noise.connect(filter);
+      filter.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      noise.start();
+      noise.stop(audioCtx.currentTime + duration);
+    } catch (e) {}
+  }
+
+  function goNext() {
+    if (animating || k >= totalLeaves) return;
+    animating = true;
+    playSwipeSound();
+    const leaf = leafEls[k];
+    leaf.style.zIndex = ++zCounter;
+    leaf.classList.add('flipped');
+    k++;
+    updateControls();
+    setTimeout(() => { animating = false; updateControls(); }, 850);
+  }
+
+  function goPrev() {
+    if (animating || k <= 0) return;
+    animating = true;
+    playSwipeSound();
+    k--;
+    const leaf = leafEls[k];
+    leaf.style.zIndex = ++zCounter;
+    leaf.classList.remove('flipped');
+    updateControls();
+    setTimeout(() => { animating = false; updateControls(); }, 850);
+  }
+
+  prevBtn.addEventListener('click', goPrev);
+  nextBtn.addEventListener('click', goNext);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') goPrev();
+    if (e.key === 'ArrowRight') goNext();
+  });
+
+  let touchStartX = null;
+  bookEl.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; });
+  bookEl.addEventListener('touchend', (e) => {
+    if (touchStartX === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 50) { dx < 0 ? goNext() : goPrev(); }
+    touchStartX = null;
+  });
+
+  updateControls();
+</script>
+
+</body>
+</html>
