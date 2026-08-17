@@ -26,7 +26,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: #dfdfdf;
+    background: #111111;
     font-family: var(--title-font);
     gap: 20px;
     padding: 20px;
@@ -200,30 +200,31 @@
   }
 
   .nav-btn {
-    padding: 10px 16px;
-    font-size: 14px;
-    font-family: var(--title-font);
-    cursor: pointer;
-    border: 1px solid #999;
-    background: white;
-    border-radius: 4px;
     flex-shrink: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    display: flex;
+    line-height: 0;
+    transition: transform 0.15s ease, opacity 0.15s ease;
   }
-  .nav-btn:hover:not(:disabled) { background: #f0f0f0; }
-  .nav-btn:disabled { opacity: 0.4; cursor: default; }
+  .nav-btn img { width: 56px; height: 56px; display: block; }
+  .nav-btn:hover:not(:disabled) { transform: scale(1.06); }
+  .nav-btn:disabled { opacity: 0.35; cursor: default; }
 </style>
 </head>
 <body>
 
 <div class="layout">
-  <button id="prevBtn" class="nav-btn">&larr; Previous</button>
+  <button id="prevBtn" class="nav-btn"><img src="assets/previous.svg" alt="Previous"></button>
 
   <div class="cover" id="coverEl">
     <div class="single-page" id="singlePage"></div>
     <div class="book" id="book"></div>
   </div>
 
-  <button id="nextBtn" class="nav-btn">Next &rarr;</button>
+  <button id="nextBtn" class="nav-btn"><img src="assets/next.svg" alt="Next"></button>
 </div>
 
 <script>
