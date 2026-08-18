@@ -94,7 +94,6 @@
     box-shadow: 0 0 60px rgba(0,0,0,.25);
     position: relative;
     overflow: hidden;
-    background: var(--page-bg);
   }
 
   .cover.single {
@@ -117,7 +116,6 @@
     perspective: 1600px;
     transition: opacity 0.35s ease;
     opacity: 1;
-    background: var(--page-bg);
   }
 
   .single-page.hidden,
@@ -134,18 +132,18 @@
     position: relative;
     z-index: 0;
   }
-  .base-page.right { position: absolute; right: 0; top: 0; }
+  .base-page.right { position: absolute; right: -1px; top: 0; width: calc(50% + 1px); }
 
   /* each leaf is a full sheet: front (currently facing right) and
      back (revealed once flipped) — both pre-rendered, nothing swaps at runtime */
   .leaf {
     position: absolute;
     top: 0;
-    right: 0;
-    width: 50%;
+    right: -1px;
+    width: calc(50% + 1px);
     height: 100%;
     transform-style: preserve-3d;
-    transform-origin: 0% 0%;
+    transform-origin: 1px 0%;
     transform: rotateY(0deg);
     transition: transform 0.7s ease-in-out;
     will-change: transform;
