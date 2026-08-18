@@ -2,11 +2,41 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Your Zine</title>
+<title>Good Good Good — Vol. 1</title>
 <style>
-  @import url('https://fonts.googleapis.com/css?family=Cormorant+Garamond:400,600&display=swap');
+  @font-face {
+    font-family: 'Codec Pro Ultra';
+    src: url('assets/fonts/codec-pro-ultra.ttf') format('truetype');
+    font-weight: 800;
+    font-style: normal;
+  }
+
+  @font-face {
+    font-family: 'PP Neue Montreal';
+    src: url('assets/fonts/ppneuemontreal-medium.otf') format('opentype');
+    font-weight: 500;
+    font-style: normal;
+  }
+
+  :root {
+    --page-bg: #F5F5F5;
+    --dark-text: #2A2935;
+    --baseline: 12px;
+    --title-font: 'Cormorant Garamond', serif;
+
+    --bg: #111111;
+    --heading-font: 'Codec Pro Ultra', sans-serif;
+    --body-font: 'PP Neue Montreal', sans-serif;
+    --muted: rgba(255,255,255,0.45);
+    --hairline: rgba(255,255,255,0.12);
+    --links-heading: #C9D3D6;
+  }
 
   * { box-sizing: border-box; }
+
+  html {
+    overflow-x: hidden;
+  }
 
   body {
     margin: 0;
@@ -14,54 +44,540 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    background: var(--bg);
+    font-family: var(--title-font);
+    gap: 20px;
+    padding: 40px 20px 100px;
+    overflow-x: hidden;
+  }
+
+  /* --- Header --- */
+  .site-header {
+    position: relative;
+    width: 100%;
+    max-width: 1200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .site-header .logo {
+    height: 18px;
+    width: auto;
+  }
+
+  .site-header .vol-label {
+    font-family: var(--heading-font);
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+  }
+
+  .what-is-this {
+    position: absolute;
+    top: 2px;
+    right: 0;
+    font-family: var(--body-font);
+    font-size: 13px;
+    color: var(--muted);
+    text-decoration: none;
+  }
+  .what-is-this:hover { color: rgba(255,255,255,0.75); }
+
+  /* --- Book layout (unchanged mechanics, just restyled container) --- */
+  .cover {
+    aspect-ratio: 2 / 1.3;
+    width: min(85vw, calc(90vh * (2 / 1.3)));
+    height: auto;
+    max-height: 90vh;
+    box-shadow: 0 0 60px rgba(0,0,0,.25);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cover.single {
+    aspect-ratio: 1 / 1.3;
+    width: min(42.5vw, calc(90vh * (1 / 1.3)));
+  }
+
+  .single-page {
+    position: absolute;
+    inset: 0;
+    background: var(--page-bg);
+    transition: opacity 0.35s ease;
+    opacity: 1;
+  }
+
+  .book {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    perspective: 1600px;
+    transition: opacity 0.35s ease;
+    opacity: 1;
+  }
+
+  .single-page.hidden,
+  .book.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* static base pages: always present underneath everything */
+  .base-page {
+    width: 50%;
+    height: 100%;
+    background: var(--page-bg);
+    position: relative;
+    z-index: 0;
+  }
+  .base-page.right { position: absolute; right: 0; top: 0; }
+
+  /* each leaf is a full sheet: front (currently facing right) and
+     back (revealed once flipped) — both pre-rendered, nothing swaps at runtime */
+  .leaf {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 50%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transform-origin: 0% 0%;
+    transform: rotateY(0deg);
+    transition: transform 0.7s ease-in-out;
+    will-change: transform;
+  }
+
+  .leaf.flipped {
+    transform: rotateY(-180deg);
+  }
+
+  .face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    backface-visibility: hidden;
+    background: var(--page-bg);
+  }
+
+  .face.front {
+    transform: rotateY(0deg) translateZ(1px);
+    background-image: linear-gradient(90deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0) 12%);
+  }
+
+  .face.back {
+    transform: rotateY(180deg) translateZ(1px);
+    background-image: linear-gradient(-90deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0) 12%);
+  }
+
+  .media-real {
+    position: absolute;
+    inset: 0;
+    background: var(--page-bg);
+  }
+
+  .media-fill {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .media-placeholder {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      45deg,
+      #e8e8e3,
+      #e8e8e3 10px,
+      #deded8 10px,
+      #deded8 20px
+    );
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
-    background: #211F20 url('assets/bg.jpg') center center / cover no-repeat;
-    font-family: 'Cormorant Garamond', serif;
-    color: #F5F5F0;
-    gap: 24px;
-    padding: 20px;
+    gap: 6px;
+    color: #7a7a72;
     text-align: center;
   }
 
-  h1 {
-    font-size: 42px;
-    font-weight: 600;
-    margin: 0;
-    letter-spacing: 1px;
+  .media-placeholder .media-icon {
+    font-size: 26px;
+    line-height: 1;
   }
 
-  p {
-    font-size: 18px;
-    color: #B5B3B2;
-    max-width: 480px;
-    margin: 0;
+  .media-placeholder .media-type {
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .media-placeholder .media-badge {
+    font-size: 11px;
+    color: #9a9a90;
+    letter-spacing: 0.3px;
+  }
+
+  .media-placeholder .media-label {
+    font-size: 12px;
+    color: #999;
+    margin-top: 2px;
+  }
+
+  .page-number {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    font-size: 12px;
+    color: #8a8a82;
+    background: rgba(255,255,255,0.6);
+    padding: 2px 8px;
+    border-radius: 3px;
+  }
+  .face.back .page-number { left: 10px; right: auto; }
+  .base-page.left .page-number { left: 10px; right: auto; }
+
+  .base-page .page-inner {
+    height: 100%;
+  }
+
+  .layout {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+  }
+
+  .nav-btn {
+    flex-shrink: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    display: flex;
+    line-height: 0;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+  }
+  .nav-btn img { width: 56px; height: 56px; display: block; }
+  .nav-btn:hover:not(:disabled) { transform: scale(1.06); }
+  .nav-btn:disabled { opacity: 0.35; cursor: default; }
+
+  /* --- Important Links footer --- */
+  .important-links {
+    width: 100%;
+    max-width: 780px;
+    margin-top: 60px;
+  }
+
+  .important-links h2 {
+    font-family: var(--heading-font);
+    font-weight: 800;
+    font-size: 56px;
+    line-height: 0.95;
+    letter-spacing: 0.5px;
+    color: var(--links-heading);
+    margin: 0 0 36px;
+    text-transform: uppercase;
+  }
+
+  .link-group {
+    padding: 18px 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .link-group:last-child {
+    border-bottom: none;
+  }
+
+  .link-group .page-label {
+    font-family: var(--body-font);
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .link-group a.link-title {
+    display: block;
+    font-family: var(--body-font);
+    font-size: 19px;
+    color: #F5F5F5;
+    text-decoration: none;
     line-height: 1.5;
   }
-
-  a.enter-link {
-    display: inline-block;
-    margin-top: 8px;
-    padding: 12px 28px;
-    font-family: inherit;
-    font-size: 16px;
-    text-decoration: none;
-    color: #F5F5F0;
-    border: 1px solid #F5F5F0;
-    border-radius: 4px;
-    transition: background 0.2s ease, color 0.2s ease;
+  .link-group a.link-title:hover {
+    color: rgba(245,245,245,0.7);
   }
 
-  a.enter-link:hover {
-    background: #F5F5F0;
-    color: #211F20;
+  @media (max-width: 640px) {
+    .important-links h2 { font-size: 40px; }
   }
 </style>
 </head>
 <body>
 
-  <h1>Your Zine</h1>
-  <p>A small zine, made one page at a time. Click below to open the issue and flip through it.</p>
-  <a class="enter-link" href="zine-prototype.html">Read the zine &rarr;</a>
+<header class="site-header">
+  <img class="logo" src="assets/ggg-logo.svg" alt="Good Good Good">
+  <div class="vol-label">VOL. 1</div>
+  <a class="what-is-this" href="#">What is this?</a>
+</header>
+
+<div class="layout">
+  <button id="prevBtn" class="nav-btn"><img src="assets/previous.svg" alt="Previous"></button>
+
+  <div class="cover" id="coverEl">
+    <div class="single-page" id="singlePage"></div>
+    <div class="book" id="book"></div>
+  </div>
+
+  <button id="nextBtn" class="nav-btn"><img src="assets/next.svg" alt="Next"></button>
+</div>
+
+<section class="important-links">
+  <h2>Important<br>Links</h2>
+
+  <!-- Edit these groups to match your real pages/links -->
+  <div class="link-group">
+    <div class="page-label">Page 1</div>
+    <a class="link-title" href="#">New Spider Man Movie "Brand New Day"</a>
+  </div>
+
+  <div class="link-group">
+    <div class="page-label">Page 4</div>
+    <a class="link-title" href="#">Lego Set — Brickheadz - Luke Skywalker™</a>
+    <a class="link-title" href="#">New Spider Man Movie "Brand New Day"</a>
+  </div>
+
+  <div class="link-group">
+    <div class="page-label">Page 8</div>
+    <a class="link-title" href="#">Lego Set — Brickheadz - Luke Skywalker™</a>
+  </div>
+</section>
+
+<script>
+  // Each entry = one physical page face. `media` is 'image' or 'video' —
+  // swap the placeholder for a real <img>/<video src="..."> later.
+  const pages = [
+    { label: "Cover", media: "image", src: "vol/1/cover.png" },
+    { label: "Contents", media: "image" },
+    { label: "Intro", media: "image" },
+    { label: "Feature Article", media: "video" },
+    { label: "Interview", media: "image" },
+    { label: "Gallery", media: "video" },
+    { label: "Notes", media: "image" },
+    { label: "Reviews", media: "image" },
+    { label: "Contributors", media: "image" },
+    { label: "Back Cover", media: "image" }
+  ];
+
+  const coverPage = pages[0];
+  const backCoverPage = pages[pages.length - 1];
+  const contentPages = pages.slice(1, pages.length - 1); // interior pages only
+
+  const totalSpreads = contentPages.length / 2;
+  const totalLeaves = totalSpreads - 1; // number of flippable sheets
+
+  const coverEl = document.getElementById('coverEl');
+  const singlePageEl = document.getElementById('singlePage');
+  const bookEl = document.getElementById('book');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+
+  function mediaPlaceholderHTML(page, pageNum) {
+    const isVideo = page.media === 'video';
+    const icon = isVideo ? '&#9654;' : '&#128247;';
+    const type = isVideo ? 'MP4' : 'PNG';
+    const badge = isVideo ? 'autoplay · loop' : 'static image';
+    return `
+      <div class="media-placeholder">
+        <div class="media-icon">${icon}</div>
+        <div class="media-type">${type} placeholder</div>
+        <div class="media-badge">${badge}</div>
+        <div class="media-label">${page.label}</div>
+        <div class="page-number">${pageNum}</div>
+      </div>
+    `;
+  }
+
+  function mediaRealHTML(page, pageNum) {
+    const isVideo = page.media === 'video';
+    const mediaTag = isVideo
+      ? `<video class="media-fill" src="${page.src}" autoplay loop muted playsinline></video>`
+      : `<img class="media-fill" src="${page.src}" alt="${page.label}">`;
+    return `
+      <div class="media-real">
+        ${mediaTag}
+        <div class="page-number">${pageNum}</div>
+      </div>
+    `;
+  }
+
+  function pageContentHTML(page, pageNum) {
+    if (!page) return '';
+    return page.src ? mediaRealHTML(page, pageNum) : mediaPlaceholderHTML(page, pageNum);
+  }
+
+  // --- Build the DOM once: static base pages + all leaves, nothing re-renders on flip ---
+  const staticLeft = document.createElement('div');
+  staticLeft.className = 'base-page left';
+  staticLeft.innerHTML = `<div class="page-inner">${pageContentHTML(contentPages[0], 2)}</div>`;
+
+  const staticRight = document.createElement('div');
+  staticRight.className = 'base-page right';
+  staticRight.innerHTML = `<div class="page-inner">${pageContentHTML(contentPages[contentPages.length - 1], pages.length - 1)}</div>`;
+
+  bookEl.appendChild(staticLeft);
+  bookEl.appendChild(staticRight);
+
+  const leafEls = [];
+  for (let i = 0; i < totalLeaves; i++) {
+    const frontPage = contentPages[2 * i + 1];
+    const backPage = contentPages[2 * i + 2];
+    const frontNum = 2 * i + 3;
+    const backNum = 2 * i + 4;
+
+    const leaf = document.createElement('div');
+    leaf.className = 'leaf';
+    leaf.style.zIndex = totalLeaves - i; // leaf 0 starts on top of the right-hand stack
+    leaf.innerHTML = `
+      <div class="face front">${pageContentHTML(frontPage, frontNum)}</div>
+      <div class="face back">${pageContentHTML(backPage, backNum)}</div>
+    `;
+    bookEl.appendChild(leaf);
+    leafEls.push(leaf);
+  }
+
+  let mode = 'front'; // 'front' | 'open' | 'back'
+  let k = 0; // number of interior leaves currently flipped = current interior spread index
+  let zCounter = totalLeaves + 1;
+  let animating = false;
+
+  function renderSinglePage(mode) {
+    const page = mode === 'front' ? coverPage : backCoverPage;
+    const pageNum = mode === 'front' ? 1 : pages.length;
+    singlePageEl.innerHTML = pageContentHTML(page, pageNum);
+  }
+
+  function applyMode() {
+    if (mode === 'open') {
+      coverEl.classList.remove('single');
+      singlePageEl.classList.add('hidden');
+      bookEl.classList.remove('hidden');
+    } else {
+      coverEl.classList.add('single');
+      bookEl.classList.add('hidden');
+      singlePageEl.classList.remove('hidden');
+      renderSinglePage(mode);
+    }
+  }
+
+  // Crossfades from the currently visible layer (single-page or book) to the
+  // other one, swapping mode/content only while fully faded out so nothing pops.
+  function transitionToCover(newMode, newK) {
+    animating = true;
+    const outgoing = mode === 'open' ? bookEl : singlePageEl;
+    outgoing.classList.add('hidden');
+
+    setTimeout(() => {
+      mode = newMode;
+      if (newK !== undefined) k = newK;
+
+      if (mode === 'open') {
+        coverEl.classList.remove('single');
+        singlePageEl.classList.add('hidden');
+      } else {
+        coverEl.classList.add('single');
+        bookEl.classList.add('hidden');
+        renderSinglePage(mode);
+      }
+
+      const incoming = mode === 'open' ? bookEl : singlePageEl;
+      void incoming.offsetWidth; // force reflow so the fade-in actually transitions
+      incoming.classList.remove('hidden');
+
+      updateControls();
+      setTimeout(() => { animating = false; updateControls(); }, 350);
+    }, 350);
+  }
+
+  function updateControls() {
+    prevBtn.disabled = mode === 'front' || animating;
+    nextBtn.disabled = mode === 'back' || animating;
+  }
+
+  function goNext() {
+    if (animating) return;
+
+    if (mode === 'front') {
+      transitionToCover('open', 0);
+      return;
+    }
+
+    if (mode === 'open') {
+      if (k < totalLeaves) {
+        animating = true;
+        const leaf = leafEls[k];
+        leaf.style.zIndex = ++zCounter;
+        leaf.classList.add('flipped');
+        k++;
+        updateControls();
+        setTimeout(() => { animating = false; updateControls(); }, 700);
+      } else {
+        transitionToCover('back');
+      }
+      return;
+    }
+    // mode === 'back': nothing further
+  }
+
+  function goPrev() {
+    if (animating) return;
+
+    if (mode === 'back') {
+      transitionToCover('open', totalLeaves);
+      return;
+    }
+
+    if (mode === 'open') {
+      if (k > 0) {
+        animating = true;
+        k--;
+        const leaf = leafEls[k];
+        leaf.style.zIndex = ++zCounter;
+        leaf.classList.remove('flipped');
+        updateControls();
+        setTimeout(() => { animating = false; updateControls(); }, 700);
+      } else {
+        transitionToCover('front');
+      }
+      return;
+    }
+    // mode === 'front': nothing further
+  }
+
+  prevBtn.addEventListener('click', goPrev);
+  nextBtn.addEventListener('click', goNext);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') goPrev();
+    if (e.key === 'ArrowRight') goNext();
+  });
+
+  let touchStartX = null;
+  coverEl.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; });
+  coverEl.addEventListener('touchend', (e) => {
+    if (touchStartX === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 50) { dx < 0 ? goNext() : goPrev(); }
+    touchStartX = null;
+  });
+
+  applyMode();
+  updateControls();
+</script>
 
 </body>
 </html>
